@@ -29,9 +29,7 @@ class LinearRegression():
 
 if __name__ == '__main__':
     x = np.random.random(1000)
-
     y = x * 5 + 3
 
     linear_regression = LinearRegression(lr=0.1, epoch=1000)
     linear_regression.fit(x, y)
-    print(linear_regression.w[0], linear_regression.w[1])
