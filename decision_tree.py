@@ -10,28 +10,32 @@ class TreeNode():
         self.depth = depth
         self.max_depth = max_depth
         self.impurity_calculator = impurity_calculator
+        self.feature_idx = None
+        self.threshold = None
+        self.label = None
 
     def create_child_node(self, data, target):
         """新しい子ノードを作成しデータを付与
         """
-        if self.depth == self.max_depth:
+        # 深さ最大 or 保持しているクラスが一つの場合, 処理を終了
+        if self.depth == self.max_depth or \
+                len(np.unique(target)) == 1:
+
+            self.label = np.argmax(np.bincount(target))
             return
 
-        # 保持しているクラスが一つの場合, 処理を終了
-        _, num_class_element_array = np.unique(target, return_counts=True)
-        if len(num_class_element_array) == 1:
-            return
+        self.feature_idx, self.threshold = self.calc_best_threshold(
+            data, target)
 
-        feature_idx, threshold = self.calc_best_threshold(data, target)
         left_data = \
-            data[np.where(data[:, feature_idx] > threshold)]
+            data[np.where(data[:, self.feature_idx] > self.threshold)]
         left_target = \
-            target[data[:, feature_idx] > threshold]
+            target[data[:, self.feature_idx] > self.threshold]
 
         right_data = \
-            data[np.where(data[:, feature_idx] <= threshold)]
+            data[np.where(data[:, self.feature_idx] <= self.threshold)]
         right_target = \
-            target[data[:, feature_idx] <= threshold]
+            target[data[:, self.feature_idx] <= self.threshold]
 
         self.left = TreeNode(
             depth=self.depth + 1,
@@ -46,6 +50,17 @@ class TreeNode():
 
         self.left.create_child_node(left_data, left_target)
         self.right.create_child_node(right_data, right_target)
+
+    def predict(self, data):
+        if self.label is not None:
+            return self.label
+
+        # print(self.threshold)
+        if data[self.feature_idx] > self.threshold:
+            return self.left.predict(data)
+
+        else:
+            return self.right.predict(data)
 
     def calc_best_threshold(self, data, target):
         """情報利得が最大となる閾値を計算し, 返却
@@ -106,6 +121,10 @@ class DecisionTreeClassifier():
         self.root.create_child_node(data, target)
 
     def predict(self, data: np.ndarray):
+        result = []
+        for element in data:
+            result.append(self.root.predict(element))
+        return result
 
 
 if __name__ == '__main__':
@@ -122,3 +141,5 @@ if __name__ == '__main__':
         impurity_calculator=gini_impurity_calculator)
 
     decision_tree_classifier.fit(data, target)
+
+    pred_result = decision_tree_classifier.predict(data)
